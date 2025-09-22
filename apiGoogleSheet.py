@@ -46,16 +46,18 @@ def root():
 # -----> Obtener todas las respuestas desde MySQL
 @app.get("/mysql/respuestas")
 def get_mysql_respuestas():
-    try:
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM RespuestasDeFormGoogle")
-        return cursor.fetchall()
-    except Error as e:
-        return {"error": str(e)}
-    finally:
-        cursor.close()
-        conn.close()
+	conn = None
+	cursor = None
+	try:
+		conn = get_connection()
+		cursor = conn.cursor(dictionary=True)
+		cursor.execute("SELECT * FROM RespuestasDeFormGoogle")
+		return cursor.fetchall()
+	except Error as e:
+		return {"error": str(e)}
+	finally:
+		cursor.close()
+		conn.close()
 
 @app.get("/sheets/respuestas")
 def get_sheets_respuestas():
