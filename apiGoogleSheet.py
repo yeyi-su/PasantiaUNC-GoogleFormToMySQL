@@ -56,8 +56,10 @@ def get_mysql_respuestas():
 	except Error as e:
 		return {"error": str(e)}
 	finally:
-		cursor.close()
-		conn.close()
+		if cursor is not None:
+			cursor.close()
+		if conn is not None:
+			conn.close()
 
 @app.get("/sheets/respuestas")
 def get_sheets_respuestas():
