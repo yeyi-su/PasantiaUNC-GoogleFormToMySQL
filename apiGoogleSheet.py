@@ -45,16 +45,8 @@ def get_connection():
 def root():
     return {"mensaje": "Bienvenido a la API GoogleSheet + MySQL "}
     
-class SheetRequest(BaseModel):
-	url: str
-    
-    
-'''def load_sheets_url():
-	with open("sheetRequest.json", "r") as f:
-		data = json.load(f)
-	return data["url"]
-	
-	'''
+
+
 @app.post("/sheets/respuestas")
 def get_sheets_respuestas():
     try:
