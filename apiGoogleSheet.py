@@ -1,8 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 import mysql.connector
 from mysql.connector import Error
 import gspread
 from google.oauth2.service_account import Credentials
+from pydantic import BaseModel
+import json
 
 
 #Coneccion Base de Datos
@@ -42,8 +44,41 @@ def get_connection():
 @app.get("/")
 def root():
     return {"mensaje": "Bienvenido a la API GoogleSheet + MySQL "}
+    
+class SheetRequest(BaseModel):
+	url: str
+    
+    
+'''def load_sheets_url():
+	with open("sheetRequest.json", "r") as f:
+		data = json.load(f)
+	return data["url"]
+	
+	'''
+@app.post("/sheets/respuestas")
+def get_sheets_respuestas():
+    try:
+        # Abrir el archivo JSON con UNA sola URL
+        with open("sheetRequest.json", "r") as f:
+            data = json.load(f)
 
-# -----> Obtener todas las respuestas desde MySQL
+        url = data.get("url")
+
+        if not url:
+            raise HTTPException(status_code=400, detail="No se encontró 'url' en sheetRequest.json")
+
+        # Conectarse a Google Sheet
+        sh = gc.open_by_url(url)
+        worksheet = sh.sheet1
+        respuestas = worksheet.get_all_records()
+
+        return {url: respuestas}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 @app.get("/mysql/respuestas")
 def get_mysql_respuestas():
 	conn = None
@@ -61,14 +96,4 @@ def get_mysql_respuestas():
 		if conn is not None:
 			conn.close()
 
-@app.get("/sheets/respuestas")
-def get_sheets_respuestas():
-    try:
-        sheet_url = "https://docs.google.com/spreadsheets/d/1-Mm50QGdItzI1MHCLmUoz8H87JbunUsJ6RGm7ezCjug/edit"
-        sh = gc.open_by_url(sheet_url)   
-        worksheet = sh.sheet1
-        data = worksheet.get_all_records()
-        return data
-    except Exception as e:
-        return {"error": str(e)}
 
