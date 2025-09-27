@@ -50,8 +50,7 @@ def root():
 @app.post("/sheets/respuestas")
 def get_sheets_respuestas():
     try:
-        # Abrir el archivo JSON con UNA sola URL
-        with open("sheetRequest.json", "r") as f:
+        with open("sheetRequest.json", "r") as f:  
             data = json.load(f)
 
         url = data.get("url")
@@ -59,7 +58,6 @@ def get_sheets_respuestas():
         if not url:
             raise HTTPException(status_code=400, detail="No se encontró 'url' en sheetRequest.json")
 
-        # Conectarse a Google Sheet
         sh = gc.open_by_url(url)
         worksheet = sh.sheet1
         respuestas = worksheet.get_all_records()
