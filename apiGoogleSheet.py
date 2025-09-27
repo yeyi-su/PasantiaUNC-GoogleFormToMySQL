@@ -3,7 +3,6 @@ import mysql.connector
 from mysql.connector import Error
 import gspread
 from google.oauth2.service_account import Credentials
-from pydantic import BaseModel
 import json
 
 
