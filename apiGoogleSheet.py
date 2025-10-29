@@ -46,26 +46,62 @@ def root():
     
 
 
-@app.post("/sheets/respuestas")
-def get_sheets_respuestas():
+@app.post("/sheets/sync")
+def sync_sheets_to_mysql():
+    conn = None
+    cursor = None
     try:
-        with open("sheetRequest.json", "r") as f:  
+        # Leer la URL del archivo sheetRequest.json
+        with open("sheetRequest.json", "r") as f:
             data = json.load(f)
 
         url = data.get("url")
-
         if not url:
             raise HTTPException(status_code=400, detail="No se encontró 'url' en sheetRequest.json")
 
+        # Abrir la hoja de Google Sheets
         sh = gc.open_by_url(url)
         worksheet = sh.sheet1
-        respuestas = worksheet.get_all_records()
+        rows = worksheet.get_all_records()
 
-        return {url: respuestas}
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        registros_insertados = 0
+
+        
+        for row in rows:
+            fecha = row.get("Marca temporal", "")
+            espacio = row.get("Espacio Curricular", "")
+            docente = row.get("Docente", "")
+
+            
+            for pregunta, respuesta in row.items():
+                if pregunta in ["Marca temporal", "Espacio Curricular", "Docente"]:
+                    continue 
+
+                sql = """
+                    INSERT INTO RespuestasDeGoogle (respuesta, fecha, pregunta, espacio_curricular, docente)
+                    VALUES (%s, %s, %s, %s, %s)
+                """
+                valores = (str(respuesta), fecha, pregunta, espacio, docente)
+                cursor.execute(sql, valores)
+                registros_insertados += 1
+
+        conn.commit()
+
+        return {
+            "status": "OK",
+            "mensaje": f"Migración completada con éxito. {registros_insertados} registros insertados."
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 
 @app.get("/mysql/respuestas")
