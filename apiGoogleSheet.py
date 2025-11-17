@@ -33,6 +33,10 @@ def get_connection():
     return mysql.connector.connect(**conDB)
 
 
+@app.get("/")
+def root():
+    return {"mensaje": "Bienvenido a la API GoogleSheet + MySQL "}
+    
 
 @app.post("/sheets/sync")
 def sync_sheets_to_mysql():
