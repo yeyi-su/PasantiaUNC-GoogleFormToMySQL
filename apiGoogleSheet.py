@@ -1,10 +1,9 @@
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 import mysql.connector
 from mysql.connector import Error
 import gspread
 from google.oauth2.service_account import Credentials
-import json
-
 
 
 
@@ -24,38 +23,32 @@ gc = gspread.authorize(credentials)
 app = FastAPI(
     title="GoogleSheet To MySQL",
     description="API Migración de datos de múltiples GoogleSheets a MySQL",
-    version="1.0.0"
+    version="1.0.3"
 )
 
 
 def get_connection():
-    """Abrir conexión MySQL"""
     return mysql.connector.connect(**conDB)
 
 
-@app.get("/")
-def root():
-    return {"mensaje": "Bienvenido a la API GoogleSheet + MySQL "}
-    
+
+
+class SheetRequest(BaseModel):
+    urls: list[str]
+
+
+
 
 @app.post("/sheets/sync")
-def sync_sheets_to_mysql():
+def sync_sheets_to_mysql(request: SheetRequest):
     conn = None
     cursor = None
 
     try:
-        # Lee el archivo JSON
-        with open("sheetRequest.json", "r") as f:
-            data = json.load(f)
-
-        urls = data.get("url")
+        urls = request.urls
 
         if not urls:
-            raise HTTPException(status_code=400, detail="No se encontró 'url' en sheetRequest.json")
-
-        
-        if isinstance(urls, str):
-            urls = [urls]
+            raise HTTPException(status_code=400, detail="Debes enviar al menos una URL en 'urls'.")
 
         conn = get_connection()
         cursor = conn.cursor()
@@ -63,29 +56,37 @@ def sync_sheets_to_mysql():
         registros_insertados = 0
         encuestado = 0
 
-        
-        # Recorre cada formulario de Google Sheet del JSON
-        
+
         for url in urls:
 
             sh = gc.open_by_url(url)
             worksheet = sh.sheet1
             rows = worksheet.get_all_records()
 
-            
+           
+            titulo = sh.title.strip()
+
+           
+            titulo = titulo.replace("(respuestas)", "").strip()
+
+           
+            if " - " in titulo:
+                espacio, docente = titulo.split(" - ", 1)
+            else:
+                espacio = titulo
+                docente = "Sin docente"
+
+      
             for index, row in enumerate(rows, start=2):
                 encuestado += 1
 
                 fecha = row.get("Marca temporal", "")
-                espacio = row.get("Espacio Curricular", "")
-                docente = row.get("Docente", "")
 
                 try:
                     for pregunta, respuesta in row.items():
 
-                        
-                        if pregunta in ["Marca temporal", "Espacio Curricular", "Docente"]:
-                            continue
+                        if pregunta == "Marca temporal":
+                            continue  # Ya procesada arriba
 
                         sql = """
                             INSERT INTO RespuestasDeGoogle 
@@ -93,7 +94,15 @@ def sync_sheets_to_mysql():
                             VALUES (%s, %s, %s, %s, %s, %s)
                         """
 
-                        valores = (str(respuesta), fecha, pregunta, espacio, docente, encuestado)
+                        valores = (
+                            str(respuesta),
+                            fecha,
+                            pregunta,
+                            espacio,
+                            docente,
+                            encuestado
+                        )
+
                         cursor.execute(sql, valores)
                         registros_insertados += 1
 
@@ -127,6 +136,7 @@ def sync_sheets_to_mysql():
 
 
 
+
 @app.get("/mysql/respuestas")
 def get_mysql_respuestas():
     conn = None
@@ -143,5 +153,4 @@ def get_mysql_respuestas():
             cursor.close()
         if conn is not None:
             conn.close()
-
 
