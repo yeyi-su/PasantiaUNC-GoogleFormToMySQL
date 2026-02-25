@@ -11,21 +11,23 @@ Funcionalidades
 
 Tecnologías Utilizadas
 - Python
+- FastAPI
+- Uvicorn
 - MySQL
-- Librerías de conexión a base de datos
-- API REST
+- PHPMyAdmin (para administración de base de datos)
+- Credenciales de Google
 
 INSTRUCCIONES DE USO
 
-#Ejecución de la API
+1 Ejecución de la API
 
-Para ejecutar la API debmos ingresar al directorio donde se encuentra el archivo con el siguiente comando
+Para ejecutar la API debemos ingresar al directorio donde se encuentra el archivo con el siguiente comando
 cd nombre_directorio
 Para levantar el servidor (uvicorn nombre_de_archivo:app --reload)
 uvicorn apiGoogleSheet:app --reload
 Ingresar a localhost:8000/docs
 
-#MySQL
+2 MySQL
 En este caso se utiliza PHPMyAdmin para utilizar la base de datos creada en dicho sitio
 Para levantar el servidor de PHPMyAdmin
 sudo /opt/lampp/lampp start
